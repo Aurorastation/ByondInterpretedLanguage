@@ -12,14 +12,11 @@ namespace ByondLang.UnitTests.StateTests
         [Fact]
         public async void ConstructAndDispose()
         {
-            using (var runtime = new Runtime(null))
-            {
-                using (var program = await runtime.BuildContext((r, c, m) => new BaseProgram(r, c, m))) {
-                    var result = program.ExecuteScript("Math.PI * (5+2)");
+            using var program = new BaseProgram(null);
+            await program.InitializeState();
+            var result = program.ExecuteScript("Math.PI * (5+2)");
 
-                    Assert.True(result.Wait(200));
-                }
-            }
+            Assert.True(result.Wait(200));
         }
     }
 }

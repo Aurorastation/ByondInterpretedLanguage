@@ -13,7 +13,7 @@ namespace ByondLang.Interface
         internal Terminal terminal;
         public string ComputerRef { get; private set; }
 
-        public ComputerProgram(Runtime runtime, JsContext context, ChakraCore.TypeMapper typeMapper) : base(runtime, context, typeMapper)
+        public ComputerProgram(IServiceProvider serviceProvider) : base(serviceProvider)
         {
             terminal = new Terminal(this);
         }
@@ -28,24 +28,22 @@ namespace ByondLang.Interface
             if (!callbacks.ContainsKey(hash))
                 throw new Exception("Unknown callback.");
             var weakCallback = callbacks[hash];
-            JsCallback callback;
-            if (weakCallback.TryGetTarget(out callback))
+            if (weakCallback.TryGetTarget(out JsCallback callback))
             {
-                _runtime.TimedFunction(() =>
+                TimedFunction(() =>
                 {
-                    using (new JsContext.Scope(_context))
+                    using (new JsContext.Scope(context))
                     {
                         JsValue callbackParam = data == null ? JsValue.Null : JsValue.FromString(data);
                         callback.CallbackFunction.CallFunction(JsValue.GlobalObject, callbackParam);
                     }
-                }, this, HandleException, JsTaskPriority.CALLBACK);
+                }, HandleException, JsTaskPriority.CALLBACK);
             }
         }
 
         internal override bool HandleException(Exception exception)
         {
-            var ex = exception as JsScriptException;
-            if (ex != null)
+            if (exception is JsScriptException ex)
             {
                 terminal.PrintException(ex);
                 return true;
@@ -59,7 +57,7 @@ namespace ByondLang.Interface
             base.InstallInterfaces();
             // Install APIs: term
             var glob = JsValue.GlobalObject;
-            glob.SetProperty("Term", _typeMapper.MTS(terminal), true); ;
+            glob.SetProperty("Term", typeMapper.MTS(terminal), true); ;
         }
     }
 }
